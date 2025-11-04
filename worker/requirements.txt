@@ -1,8 +1,2 @@
-praw
-tweepy
-requests
-beautifulsoup4
-feedparser
-sentence-transformers
-psycopg2-binary
-openai
+flask
+gunicorn
