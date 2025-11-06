@@ -1,24 +1,42 @@
-# worker/worker.py
 import os
-import time
-from datetime import datetime
-import traceback
-
-# Optional DB test import
 import psycopg2
-from psycopg2.extras import RealDictCursor
+from datetime import datetime, timezone
 
+# Load DATABASE_URL from environment
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-def test_db_insert_once():
-    """Try a single-safe insert into alerts to verify DB connection."""
-    if not DATABASE_URL:
-        print("🔴 DATABASE_URL not set in env. Skipping DB test.")
-        return
-
+def test_supabase_connection():
+    print("🐱 Testing connection to Supabase at:", DATABASE_URL)
     try:
         conn = psycopg2.connect(DATABASE_URL)
         cur = conn.cursor()
+
+        # Insert a test alert row
+        cur.execute("""
+            INSERT INTO alerts (type, message, metadata, importance, created_at)
+            VALUES (%s, %s, %s, %s, %s)
+        """, (
+            "startup-test",
+            f"worker-startup-test — {datetime.now(timezone.utc).isoformat()}",
+            '{}',
+            'low',
+            datetime.now(timezone.utc)
+        ))
+
+        conn.commit()
+        cur.close()
+        conn.close()
+        print("✅ Supabase test insert successful!")
+
+    except Exception as e:
+        print("❌ Database test failed:", e)
+
+def main():
+    print("Worker starting...", datetime.now(timezone.utc).isoformat())
+    test_supabase_connection()
+
+if __name__ == "__main__":
+    main()
         # Use a unique message so we can find it easily in Supabase
         msg = f"worker-startup-test — {datetime.utcnow().isoformat()}"
         cur.execute(
