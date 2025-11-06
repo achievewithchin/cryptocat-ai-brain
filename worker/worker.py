@@ -32,10 +32,19 @@ def parse_dsn(dsn):
     user, password, host, port, dbname = m.group(1), m.group(2), m.group(3), m.group(4) or "5432", m.group(5)
     return {"user": user, "password": password, "host": host, "port": int(port), "dbname": dbname}
 
-def resolve_ipv4(hostname):
+def resolve_ipv4_via_doh(hostname):
+    # Uses Google's DNS-over-HTTPS API to get A records
     try:
-        return [ai[4][0] for ai in socket.getaddrinfo(hostname, None) if ai[0] == socket.AF_INET]
-    except Exception:
+        url = f"https://dns.google/resolve?name={hostname}&type=A"
+        r = requests.get(url, timeout=6)
+        data = r.json()
+        ips = []
+        for ans in data.get("Answer", []):
+            if ans.get("type") == 1:  # A record
+                ips.append(ans.get("data"))
+        return ips
+    except Exception as e:
+        print("DOH resolve error:", e)
         return []
 
 def test_supabase_connection():
